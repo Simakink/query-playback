@@ -50,6 +50,7 @@ public:
   typedef boost::chrono::system_clock::time_point TimePoint;
 
   boost::string_ref data; // query including metadata
+  boost::string_ref user;
   mutable uint64_t thread_id; // we cache the thread id
   TimePoint start_time;
 
@@ -66,6 +67,7 @@ public:
   uint64_t parseRowsSent() const;
   uint64_t parseRowsExamined() const;
   double parseQueryTime() const;
+  bool parseDbUser(std::string &db_user) const;
 
   TimePoint getStartTime() const { return start_time; }
   void setStartTime(TimePoint tp) { start_time = tp; }

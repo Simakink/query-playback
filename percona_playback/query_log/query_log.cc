@@ -154,6 +154,11 @@ boost::shared_ptr<QueryLogEntries> getEntries(boost::string_ref data)  {
 
       // not every query has time metadata. Because only if the timestamp changes a new entry will get generated.
       // this is why we have a field inside the QueryLogData to save the timestamp.
+      // if (line.starts_with("# User@Host")) {
+      //   parse_time(line, current_timestamp);
+      //   continue;
+      // }
+      
       if (line.starts_with("# Time")) {
         parse_time(line, current_timestamp);
         continue;
@@ -221,7 +226,10 @@ bool QueryLogData::operator <(const QueryLogData& right) const {
 void QueryLogData::execute(DBThread *t)
 {
   std::string query = getQuery(!g_run_set_timestamp);
-
+  if (t->db_user == "") {
+    parseDbUser(t->db_user);
+  }
+  
   QueryResult expected_result;
   expected_result.setRowsSent(parseRowsSent());
   expected_result.setRowsExamined(parseRowsExamined());
@@ -335,6 +343,20 @@ uint64_t QueryLogData::parseRowsSent() const {
   return 0;
 }
 
+bool QueryLogData::parseDbUser(std::string &db_user) const {
+  // # User@Host: texa2842646678[texa2842646678] @  [50.62.208.202]  Id: 243196759
+  char tmp[100];
+  size_t location= find(data, "# User@Host: ");
+  if (location != std::string::npos) {
+    //size_t end_location= find(data[locationlocation + strlen("# User@Host: ")
+    int num_read = sscanf(&data[location + strlen("# User@Host: ")], "%[^[]", &tmp);
+    if (num_read == 1)
+      db_user = tmp;
+      return true;
+  }
+  return false;
+}
+
 uint64_t QueryLogData::parseRowsExamined() const {
   size_t location= find(data, "Rows_Examined: ");
   if (location != std::string::npos)
@@ -377,7 +399,7 @@ private:
   po::options_description     options;
   std::string                 file_name;
   unsigned int                read_count;
-  bool			      std_in;
+  bool            std_in;
 
 public:
   QueryLogPlugin(const std::string &_name) :
@@ -434,14 +456,14 @@ public:
   {
     if (!active &&
         (vm.count("query-log-file") ||
-	 !vm["query-log-stdin"].defaulted() ||
+   !vm["query-log-stdin"].defaulted() ||
 //         !vm["query-log-read-count"].defaulted() ||
          !vm["query-log-preserve-query-time"].defaulted() ||
          !vm["query-log-set-timestamp"].defaulted()))
     {
       fprintf(stderr,_(("query-log plugin is not selected, "
-			"you shouldn't use this plugin-related "
-			"command line options\n")));
+      "you shouldn't use this plugin-related "
+      "command line options\n")));
       return -1;
     }
 
@@ -451,7 +473,7 @@ public:
     if (vm.count("query-log-file") && vm["query-log-stdin"].as<bool>())
     {
       fprintf(stderr,  _(("The options --query-log-file and --query-log-stdin "
-			  "can not be used together\n")));
+        "can not be used together\n")));
       return -1;
     }
 

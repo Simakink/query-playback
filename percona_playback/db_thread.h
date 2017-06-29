@@ -45,10 +45,11 @@ private:
 public:
   typedef tbb::concurrent_bounded_queue<QueryEntryPtr> Queries;
   boost::shared_ptr<Queries> queries;
+  std::string db_user;
 
   DBThread(uint64_t _thread_id,
-	   boost::shared_ptr<Queries> _queries) :
-	  thread_id(_thread_id), queries(_queries)  {
+     boost::shared_ptr<Queries> _queries) :
+    thread_id(_thread_id), queries(_queries)  {
     queries->set_capacity(g_db_thread_queue_depth);
   }
 
@@ -79,8 +80,8 @@ public:
 
   virtual void disconnect()= 0;
   virtual void execute_query(const std::string &query,
-			     QueryResult *r,
-			     const QueryResult &expected_result)= 0;
+           QueryResult *r,
+           const QueryResult &expected_result)= 0;
 
   virtual void run();
 

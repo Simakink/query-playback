@@ -32,15 +32,15 @@ class MySQLDBThread : public DBThread
  public:
   MySQLDBThread(uint64_t _thread_id, MySQLOptions *opt) :
     DBThread(_thread_id,
-	     boost::shared_ptr<Queries>(new Queries())),
+       boost::shared_ptr<Queries>(new Queries())),
     options(opt), num_connect_errors(0)
   {
   }
-
+  
   bool connect();
   void disconnect();
   void execute_query(const std::string &query, QueryResult *r,
-		     const QueryResult &expected_result);
+         const QueryResult &expected_result);
   void run();
 
   // establishes a connection to the mysql server in order to check if the connection settings are correct

@@ -47,6 +47,7 @@ public:
   unsigned int port;
   unsigned int max_retries;
   boost::regex filter_error_regex;
+  bool use_logged_user;
 };
 
 bool MySQLDBThread::should_print_error(const char* error) {
@@ -58,15 +59,26 @@ bool MySQLDBThread::connect()
   bool had_too_many_connections;
   int num_tries;
   num_tries = 0;
+  const char* tmp_user;
+  const char* tmp_schema;
+  
+  if ( options->use_logged_user == true && db_user != "" ) {
+    tmp_user = db_user.c_str();
+    tmp_schema = db_user.c_str();
+  } else {
+    tmp_user = options->user.c_str();
+    tmp_schema = options->schema.c_str();
+  }
+  
   do {
     num_tries++;
     mysql_init(&handle);
     had_too_many_connections = false;
     if (!mysql_real_connect(&handle,
           options->host.c_str(),
-          options->user.c_str(),
+          tmp_user,
                 options->password.c_str(),
-                options->schema.c_str(),
+                tmp_schema,
                 options->port,
                 options->socket.c_str(),
                 CLIENT_MULTI_STATEMENTS))
@@ -199,6 +211,7 @@ public:
                                                        "(use \".*\" to suppress all errors)"))
     ("mysql-test-connect", po::value<bool>(), _("Per default we do a test connection to the MySQL server to check"
                                                 " if the connection settings are correct and exit if it fails"))
+    ("mysql-use-logged-user", po::value<bool>(), _("Use the username as seen in the slow query log"))
     ;
 
     return &mysql_options;
@@ -242,6 +255,15 @@ public:
     if (vm.count("mysql-username"))
     {
       options.user= vm["mysql-username"].as<std::string>();
+    }
+    
+    if (vm.count("mysql-use-logged-user"))
+    {
+      options.use_logged_user= vm["mysql-use-logged-user"].as<bool>();
+    }
+    else
+    {
+      options.use_logged_user= false;
     }
 
     if (vm.count("mysql-password"))
